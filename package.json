@@ -1,0 +1,19 @@
+{
+  "name": "bracketboi",
+  "version": "1.0.0",
+  "description": "Collects data for the BattleBots Prediction League Discord server.",
+  "main": "app.js",
+  "author": "Jordan Kiesel",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jtkiesel/bracketboi.git"
+  },
+  "dependencies": {
+    "discord.js": "github:hydrabolt/discord.js",
+    "npm": "^6.0.0"
+  },
+  "engines": {
+    "node": "^10.0.0"
+  }
+}
