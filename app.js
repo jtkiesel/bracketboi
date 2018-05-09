@@ -47,11 +47,6 @@ const battles = [
 		name: 'Battle 5',
 		bots: ['Tombstone', 'Minotaur'],
 		expires: episode1Expiration
-	},{
-		_id: 6,
-		name: 'Battle 6 (Rumble)',
-		bots: ['Kraken', 'Sharkopion', 'Deviled Egg'],
-		expires: 'May 16 2018 12:00 PM EDT'
 	}
 ];
 
@@ -154,6 +149,7 @@ const makePredictions = async user => {
 			console.error(err);
 		}
 	}
+	user.send('You have finished predicting the outcome of all currently available battles.\n\nYou may check on your choices at any time with the `!check` command, or make changes to them using the `!predict` command.');
 };
 
 const checkPredictions = async (user, all) => {
