@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "discord.js": "github:hydrabolt/discord.js",
+    "mongodb": "^3.0.7",
     "npm": "^6.0.0"
   },
   "engines": {
