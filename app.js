@@ -207,7 +207,7 @@ client.on('error', console.error);
 client.on('message', async message => {
 	if (message.content.startsWith(prefix)) {
 		const member = client.guilds.get(guildId).member(message.author);
-		if (member && (/*member.roles.find('name', 'Registered') || */member.roles.find('name', 'Administrator'))) {
+		if (member && member.roles.find('name', 'Registered')) {
 			handleCommand(message);
 		} else {
 			message.author.send('You must be a Registered BattleBots Prediction League member to execute commands.');
