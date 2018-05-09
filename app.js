@@ -79,10 +79,8 @@ const getPredictions = (user) => {
 };
 
 const handleHelp = user => {
-	const embed = new Discord.MessageEmbed()
-			.setDescription('`!help`: Information about all commands.\n`!predict`: Make predictions for future battles.\n`!check`: Check previously-made predictions for future battles.\n`!check all`: Check previously-made predictions for all battles.');
-	user.send(embed);
-}
+	user.send('`!help`: Information about all commands.\n`!predict`: Make predictions for future battles.\n`!check`: Check previously-made predictions for future battles.\n`!check all`: Check previously-made predictions for all battles.');
+};
 
 const makePredictions = async user => {
 	const message1 = await user.send('You are about to make your predictions for the winners of future battles!\n\nEach battle will be presented to you, one at a time, and you must select the reaction corresponding to the bot you wish to choose for each battle. You also have the option of abstaining from predicting (if, for example, you already know the outcome of a particular battle), but **this will cause your score for that battle to be 0**.\n\nYou will have one minute to make your selection for each battle, and as soon as you make each of your selections, your choices are saved. **But don\'t worry!** You can change your predictions at any time (up until each battle\'s expiration time, some predetermined amount of time before the battle airs on TV) by executing the `!predict` command again.\n\nAn arrow emoji will point to your selection if/when you have already made a prediction.\n\nSelect the reaction below when you are ready to begin.');
