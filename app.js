@@ -179,6 +179,38 @@ const handleCommand = message => {
 		makePredictions(message.author);
 	} else if (cmd === 'check') {
 		checkPredictions(message.author, (args && args[0] === 'all'));
+	}
+};
+
+const handleTeams = async user => {
+	const teams = await db.collection('predictions').aggregate()
+		.group({_id: '$_id.user', battles: {$push: '$_id.battle'}, size: {$sum: 1}})
+		.sort({size: -1})
+		.toArray();
+		let description = '';
+	teams.forEach(team => {
+		description += `<@${team._id}> [${team.battles}]\n`;
+	});
+	const embed = new Discord.MessageEmbed()
+		.setTitle('Teams:')
+		.setDescription(description);
+
+	user.send({embed: embed});
+};
+
+const handleAdminCommand = message => {
+	const slice = message.content.indexOf(' ');
+	const cmd = message.content.slice(prefix.length, (slice < 0) ? message.content.length : slice);
+	const args = (slice < 0) ? '' : message.content.slice(slice);
+
+	if (cmd === 'help') {
+		handleHelp(message.author);
+	} else if (cmd === 'predict') {
+		makePredictions(message.author);
+	} else if (cmd === 'check') {
+		checkPredictions(message.author, (args && args[0] === 'all'));
+	} else if (cmd === 'teams') {
+		handleTeams(message.author);
 	} else if (cmd === 'eval') {
 		if (message.author.id === '197781934116569088') {
 			try {
@@ -205,7 +237,9 @@ client.on('error', console.error);
 client.on('message', async message => {
 	if (message.content.startsWith(prefix)) {
 		const member = client.guilds.get(guildId).member(message.author);
-		if (member && member.roles.find('name', 'Registered')) {
+		if (member && member.roles.find('name', 'Administrator')) {
+			handleAdminCommand(message);
+		} else if (member && member.roles.find('name', 'Registered')) {
 			handleCommand(message);
 		} else {
 			message.author.send('You must be a Registered BattleBots Prediction League member to execute commands.');
