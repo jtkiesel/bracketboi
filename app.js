@@ -19,7 +19,7 @@ const emojis = ['🇦', '🇧', '🇨', '🇩'];
 const noneEmoji = '❌';
 const acceptEmoji = '✅';
 
-const episode1Expiration = 'May 10 2018 11:00 PM EDT';
+const episode1Expiration = 'May 11 2018 12:00 PM EDT';
 
 const battles = [
 	{
