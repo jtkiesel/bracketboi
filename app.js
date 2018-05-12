@@ -178,7 +178,7 @@ const handleCommand = message => {
 	} else if (cmd === 'predict') {
 		makePredictions(message.author);
 	} else if (cmd === 'check') {
-		checkPredictions(message.author, (args && args[0] === 'all'));
+		checkPredictions(message.author, (args && args.includes('all')));
 	} else if (cmd === 'leaderboard') {
 		handleLeaderboard(message.author);
 	}
@@ -238,7 +238,7 @@ const handleAdminCommand = message => {
 	} else if (cmd === 'predict') {
 		makePredictions(message.author);
 	} else if (cmd === 'check') {
-		checkPredictions(message.author, (args && args[0] === 'all'));
+		checkPredictions(message.author, (args && args.includes('all')));
 	} else if (cmd === 'teams') {
 		handleTeams(message.author);
 	} else if (cmd === 'leaderboard') {
