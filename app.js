@@ -59,8 +59,8 @@ const createBattleEmbed = (battle, choice = null) => {
 	}
 	description += `${noneEmoji} Abstain (automatic 0)${choice === -1 ? ' ⬅️' : ''}`;
 	const embed = new Discord.MessageEmbed()
-			.setTitle(`Who will win ${battle.name}?`)
-			.setDescription(description);
+		.setTitle(`Who will win ${battle.name}?`)
+		.setDescription(description);
 	return embed;
 };
 
@@ -179,6 +179,8 @@ const handleCommand = message => {
 		makePredictions(message.author);
 	} else if (cmd === 'check') {
 		checkPredictions(message.author, (args && args[0] === 'all'));
+	} else if (cmd === 'leaderboard') {
+		handleLeaderboard(message.author);
 	}
 };
 
@@ -187,12 +189,40 @@ const handleTeams = async user => {
 		.group({_id: '$_id.user', battles: {$push: '$_id.battle'}, size: {$sum: 1}})
 		.sort({size: -1})
 		.toArray();
-		let description = '';
+	let description = '';
 	teams.forEach(team => {
 		description += `<@${team._id}> [${team.battles}]\n`;
 	});
 	const embed = new Discord.MessageEmbed()
 		.setTitle('Teams:')
+		.setDescription(description);
+
+	user.send({embed: embed});
+};
+
+const handleLeaderboard = async user => {
+	const predictions = await db.collection('predictions').find().toArray();
+	const battles = await db.collection('battles').find({winner: {$exists: true}}).toArray();
+	const leaderboard = client.guilds.get(guildId).roles.find('name', 'Registered').members.keyArray().map(user => { return {user: user, score: 0} });
+
+	predictions.forEach(prediction => {
+		const battle = battles.find(battle => battle._id === prediction._id.battle);
+		if (battle && battle.winner === prediction.choice) {
+			leaderboard.find(team => team.user === prediction._id.user).score += battle.name.includes('Rumble') ? 2 : 1;
+		}
+	});
+	leaderboard.sort((a, b) => b.score - a.score);
+	let description = '';
+	let lastScore = -1;
+	for (let i = 0; i < leaderboard.length; i++) {
+		if (leaderboard[i].score !== lastScore) {
+			lastRank = i;
+			lastScore = leaderboard[i].score;
+		}
+		description += `**\`#${String(lastRank + 1).padEnd(3)}\​\`** <@${leaderboard[i].user}> \`${leaderboard[i].score} points\`\n`;
+	}
+	const embed = new Discord.MessageEmbed()
+		.setTitle('Leaderboard:')
 		.setDescription(description);
 
 	user.send({embed: embed});
@@ -211,6 +241,8 @@ const handleAdminCommand = message => {
 		checkPredictions(message.author, (args && args[0] === 'all'));
 	} else if (cmd === 'teams') {
 		handleTeams(message.author);
+	} else if (cmd === 'leaderboard') {
+		handleLeaderboard(message.author);
 	} else if (cmd === 'eval') {
 		if (message.author.id === '197781934116569088') {
 			try {
