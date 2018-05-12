@@ -219,7 +219,7 @@ const handleLeaderboard = async user => {
 			lastRank = i;
 			lastScore = leaderboard[i].score;
 		}
-		description += `**\`#${String(lastRank + 1).padEnd(3)}\​\`** <@${leaderboard[i].user}> \`${leaderboard[i].score} points\`\n`;
+		description += `**\`#${String(lastRank + 1).padEnd(3)}\​\`** <@${leaderboard[i].user}> \`${leaderboard[i].score} point${leaderboard[i].score === 1 > '' : 's'}\`\n`;
 	}
 	const embed = new Discord.MessageEmbed()
 		.setTitle('Leaderboard:')
