@@ -179,7 +179,7 @@ const handleTeams = async user => {
 const handleLeaderboard = async user => {
 	const predictions = await db.collection('predictions').find().toArray();
 	const battles = await db.collection('battles').find({winner: {$exists: true}}).toArray();
-	const leaderboard = client.guilds.get(guildId).roles.find('name', 'Registered').members.keyArray().map(user => { return {user: user, score: 0} });
+	const leaderboard = client.guilds.get(guildId).roles.find(role => role.name === 'Registered').members.keyArray().map(user => { return {user: user, score: 0} });
 
 	predictions.forEach(prediction => {
 		const battle = battles.find(battle => battle._id === prediction._id.battle);
@@ -245,9 +245,9 @@ client.on('error', console.error);
 client.on('message', async message => {
 	if (message.content.startsWith(prefix)) {
 		const member = client.guilds.get(guildId).member(message.author);
-		if (member && member.roles.find('name', 'Administrator')) {
+		if (member && member.roles.find(role => role.name === 'Administrator')) {
 			handleAdminCommand(message);
-		} else if (member && member.roles.find('name', 'Registered')) {
+		} else if (member && member.roles.find(role =>role.name === 'Registered')) {
 			handleCommand(message);
 		} else {
 			message.author.send('You must be a Registered BattleBots Prediction League member to execute commands.');

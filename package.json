@@ -12,9 +12,9 @@
   "dependencies": {
     "discord.js": "github:hydrabolt/discord.js",
     "mongodb": "^3.0.7",
-    "npm": "^6.0.0"
+    "npm": "^6.0.1"
   },
   "engines": {
-    "node": "^10.0.0"
+    "node": "^10.1.0"
   }
 }
