@@ -21,35 +21,6 @@ const acceptEmoji = '✅';
 
 const episode1Expiration = 'May 11 2018 12:00 PM EDT';
 
-const battles = [
-	{
-		_id: 1,
-		name: 'Battle 1',
-		bots: ['Bite Force', 'Blacksmith'],
-		expires: episode1Expiration
-	},{
-		_id: 2,
-		name: 'Battle 2 (Rumble)',
-		bots: ['Mecha Rampage', 'DUCK!', 'Free Shipping'],
-		expires: episode1Expiration
-	},{
-		_id: 3,
-		name: 'Battle 3',
-		bots: ['SubZero', 'HUGE'],
-		expires: episode1Expiration
-	},{
-		_id: 4,
-		name: 'Battle 4',
-		bots: ['Bombshell', 'LockJaw'],
-		expires: episode1Expiration
-	},{
-		_id: 5,
-		name: 'Battle 5',
-		bots: ['Tombstone', 'Minotaur'],
-		expires: episode1Expiration
-	}
-];
-
 let db;
 
 const createBattleEmbed = (battle, choice = null) => {
@@ -79,7 +50,7 @@ const getPredictions = (user) => {
 };
 
 const handleHelp = user => {
-	user.send('`!help`: Information about all commands.\n`!predict`: Make predictions for future battles.\n`!check`: Check previously-made predictions for future battles.\n`!check all`: Check previously-made predictions for all battles.');
+	user.send('`!help`: Information about all commands.\n`!predict`: Predict the outcome of future battles.\n`!check`: Your predictions for future battles.\n`!check all`: Your predictions for all battles.\n`!leaderboard`: Predictors with the highest number of points.');
 };
 
 const makePredictions = async user => {
@@ -96,9 +67,13 @@ const makePredictions = async user => {
 		message1.edit('Sorry, your request timed out. Please send \`!predict\` again to start over.');
 		return;
 	}
-	const filtered = battles.filter(battle => Date.parse(battle.expires) > Date.now());
+	const battles = (await db.collection('battles').find().toArray()).filter(battle => Date.parse(battle.deadline) > Date.now());
+	if (battles.length === 0) {
+		user.send('There are no battles available at the moment. Please use `!check all` to review your past predictions.');
+		return;
+	}
 	const predictions = await getPredictions(user);
-	for (let battle of filtered) {
+	for (let battle of battles) {
 		const choices = emojis.slice(0, battle.bots.length);
 		let currentChoice = null;
 		if (predictions && predictions.length) {
@@ -151,15 +126,16 @@ const makePredictions = async user => {
 };
 
 const checkPredictions = async (user, all) => {
+	const battles = await db.collection('battles').find().toArray();
 	let predictions = await getPredictions(user);
 	if (predictions && !all) {
 		predictions = predictions.filter(prediction => {
 			const battle = battles.find(battle => battle._id === prediction._id.battle);
-			return Date.parse(battle.expires) > Date.now();
+			return battle.hasOwnProperty('winner');
 		});
 	}
 	if (!predictions || predictions.length == 0) {
-		user.send('No predictions to display.');
+		user.send('No future battle predictions to display. Try running `!check all` to see previous predictions or `!predict` to see if new battles are available.');
 		return;
 	}
 	for (let prediction of predictions) {
