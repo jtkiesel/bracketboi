@@ -184,7 +184,13 @@ const handleLeaderboard = async user => {
 	predictions.forEach(prediction => {
 		const battle = battles.find(battle => battle._id === prediction._id.battle);
 		if (battle && battle.winner === prediction.choice) {
-			leaderboard.find(team => team.user === prediction._id.user).score += battle.name.includes('Rumble') ? 2 : 1;
+			const score = battle.name.includes('Rumble') ? 2 : 1;
+			const team = leaderboard.find(team => team.user === prediction._id.user);
+			if (team) {
+				team.score += score;
+			} else {
+				leaderboard.push({user: prediction._id.user, score: score});
+			}
 		}
 	});
 	leaderboard.sort((a, b) => b.score - a.score);
