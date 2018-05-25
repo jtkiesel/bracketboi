@@ -166,11 +166,22 @@ const handleTeams = async user => {
 		.sort({size: -1})
 		.toArray();
 	let description = '';
+	let i = 0;
 	teams.forEach(team => {
-		description += `<@${team._id}> [${team.battles}]\n`;
+		let s = `<@${team._id}> [${team.battles}]\n`;
+		if (description.length + s.length <= 2048) {
+			description += s;
+		} else {
+			const embed = new Discord.MessageEmbed()
+				.setTitle(`Teams ${++i}:`)
+				.setDescription(description);
+
+			user.send({embed: embed});
+			description = s;
+		}
 	});
 	const embed = new Discord.MessageEmbed()
-		.setTitle('Teams:')
+		.setTitle(`Teams ${i == 0 ? '' : i + 1}:`)
 		.setDescription(description);
 
 	user.send({embed: embed});
