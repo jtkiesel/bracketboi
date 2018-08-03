@@ -1,20 +1,29 @@
 {
-  "name": "bracketboi",
-  "version": "1.0.0",
-  "description": "Collects data for the BattleBots Prediction League Discord server.",
-  "main": "app.js",
-  "author": "Jordan Kiesel",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/jtkiesel/bracketboi.git"
-  },
-  "dependencies": {
-    "discord.js": "github:hydrabolt/discord.js",
-    "mongodb": "^3.0.7",
-    "npm": "^6.0.1"
-  },
-  "engines": {
-    "node": "^10.1.0"
-  }
+	"name": "bracketboi",
+	"version": "1.0.0",
+	"description": "Collects data for the BattleBots Prediction League Discord server.",
+	"keywords": ["Discord", "bot", "Battlebots", "predict", "league"],
+	"homepage": "https://github.com/jtkiesel/bracketboi#readme",
+	"bugs": {
+		"url": "https://github.com/jtkiesel/bracketboi/issues"
+	},
+	"license": "MIT",
+	"author": {
+		"name": "Jordan Kiesel"
+	},
+	"main": "app.js",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/jtkiesel/bracketboi.git"
+	},
+	"scripts": {
+		"start": "node app.js"
+	},
+	"dependencies": {
+		"discord.js": "hydrabolt/discord.js",
+		"mongodb": "^3.1.1"
+	},
+	"engines": {
+		"node": "^10.8.0"
+	}
 }

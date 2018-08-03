@@ -19,23 +19,22 @@ const emojis = ['🇦', '🇧', '🇨', '🇩'];
 const noneEmoji = '❌';
 const acceptEmoji = '✅';
 
-const episode1Expiration = 'May 11 2018 12:00 PM EDT';
-
 let db;
 
-const createBattleEmbed = (battle, choice = null) => {
+const createBattleEmbed = (battle, choice = '') => {
 	let description = '';
 	for (let i = 0; i < battle.bots.length; i++) {
-		description += `${emojis[i]} ${battle.bots[i]}${i === choice ? ' ⬅️' : ''}\n`;
+		const bot = battle.bots[i];
+		description += `${emojis[i]} ${bot}${bot === choice ? ' ⬅️' : ''}\n`;
 	}
-	description += `${noneEmoji} Abstain (automatic 0)${choice === -1 ? ' ⬅️' : ''}`;
+	description += `${noneEmoji} Abstain (automatic 0)${choice === '' ? ' ⬅️' : ''}`;
 	const embed = new Discord.MessageEmbed()
 		.setTitle(`Who will win ${battle.name}?`)
 		.setDescription(description);
 	return embed;
 };
 
-const createPrediction = (user, battle, choice) => {
+const createPrediction = (user, battle, choice = '') => {
 	return {
 		_id: {
 			user: user,
@@ -50,7 +49,7 @@ const getPredictions = (user) => {
 };
 
 const handleHelp = user => {
-	user.send('`!help`: Information about all commands.\n`!predict`: Predict the outcome of future battles.\n`!check`: Your predictions for future battles.\n`!check all`: Your predictions for all battles.\n`!leaderboard`: Predictors with the highest number of points.');
+	user.send('`!help`: Information about all commands.\n`!predict`: Predict the outcome of future battles, and check your predictions for those battles.\n`!leaderboard`: Predictors with the highest number of points.');
 };
 
 const makePredictions = async user => {
@@ -69,21 +68,26 @@ const makePredictions = async user => {
 	}
 	const battles = (await db.collection('battles').find().toArray()).filter(battle => Date.parse(battle.deadline) > Date.now());
 	if (battles.length === 0) {
-		user.send('There are no battles available at the moment. Please use `!check all` to review your past predictions.');
+		user.send('There are no battles available at the moment.');
 		return;
 	}
-	const predictions = await getPredictions(user);
-	for (let battle of battles) {
-		const choices = emojis.slice(0, battle.bots.length);
-		let currentChoice = null;
-		if (predictions && predictions.length) {
-			const currentPrediction = predictions.find(prediction => prediction._id.battle === battle._id);
-			if (currentPrediction) {
-				currentChoice = currentPrediction.choice;
+	const predictions = await getPredictions(user) || [];
+	let bracketIndex = -1;
+	for (let i = 0; i < battles.length; i++) {
+		const battle = battles[i];
+		if (battle.name.includes('Bracket Definition')) {
+			bracketIndex = i;
+			const name = battle.name.slice(0, battle.name.indexOf('Bracket Definition'));
+			const bots = battle.bots.slice();
+			for (let j = 0; j < battle.bots.length / 2; j++) {
+				battles.push({_id: battle._id + j + 1, name: `${name}Battle ${j + 1}`, bots: [bots.shift(), bots.pop()], deadline: battle.deadline});
 			}
+			continue;
 		}
+		const choices = emojis.slice(0, battle.bots.length);
+		const predictionIndex = predictions.findIndex(prediction => prediction._id.battle === battle._id);
 		try {
-			const message = await user.send(createBattleEmbed(battle, currentChoice));
+			const message = await user.send(createBattleEmbed(battle, predictionIndex >= 0 ? predictions[predictionIndex].choice : null));
 			const collector = message.awaitReactions((reaction, u) => {
 				return u.id === user.id && (reaction.emoji.name === noneEmoji || choices.includes(reaction.emoji.name));
 			}, {time: 60000, max: 1});
@@ -95,9 +99,15 @@ const makePredictions = async user => {
 			for (let choice = 0; choice < choices.length; choice++) {
 				const collectedReaction = collected.get(choices[choice]);
 				if (collectedReaction && collectedReaction.users.has(user.id)) {
-					const prediction = createPrediction(user.id, battle._id, choice);
+					const bot = battle.bots[choice];
+					const prediction = createPrediction(user.id, battle._id, bot);
+					if (predictionIndex < 0) {
+						predictions.push(prediction);
+					} else {
+						predictions[predictionIndex] = prediction;
+					}
 					await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
-					message.edit(createBattleEmbed(battle, choice));
+					message.edit(createBattleEmbed(battle, bot));
 				}
 				const reaction = message.reactions.get(choices[choice]);
 				if (reaction) {
@@ -106,9 +116,14 @@ const makePredictions = async user => {
 			}
 			const collectedReaction = collected.get(noneEmoji);
 			if (collectedReaction && collectedReaction.users.has(user.id)) {
-				const prediction = createPrediction(user.id, battle._id, -1);
+				const prediction = createPrediction(user.id, battle._id);
 				await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
-				message.edit(createBattleEmbed(battle, -1));
+				if (predictionIndex < 0) {
+					predictions.push(prediction);
+				} else {
+					predictions[predictionIndex] = prediction;
+				}
+				message.edit(createBattleEmbed(battle));
 			}
 			const reaction = message.reactions.get(noneEmoji);
 			if (reaction) {
@@ -121,27 +136,30 @@ const makePredictions = async user => {
 		} catch (err) {
 			console.error(err);
 		}
+		if (i === battles.length - 1 && bracketIndex >= 0) {
+			const bracket = battles[bracketIndex];
+			const numBots = bracket.bots.length / 2;
+			if (numBots > 1) {
+				const bots = [];
+				for (let j = 0; j < numBots; j++) {
+					bots.unshift(predictions.find(prediction => prediction._id.battle === bracket._id + j + 1).choice);
+				}
+				let round;
+				if (numBots >= 16) {
+					round = `R${numBots}`;
+				} else if (numBots === 8) {
+					round = 'Quarterfinals';
+				} else if (numBots === 4) {
+					round = 'Semifinals';
+				} else if (numBots === 2) {
+					round = 'Final';
+				}
+				const name = bracket.name.replace(/[^ ]+ Bracket Definition/, `${round} Bracket Definition`);
+				battles.push({_id: bracket._id + numBots + 1, name: name, bots: bots, deadline: bracket.deadline});
+			}
+		}
 	}
-	user.send('You have finished predicting the outcome of all currently available battles.\n\nYou may check on your choices at any time with the `!check` command, or make changes to them using the `!predict` command.');
-};
-
-const checkPredictions = async (user, all) => {
-	const battles = await db.collection('battles').find().toArray();
-	let predictions = await getPredictions(user);
-	if (predictions && !all) {
-		predictions = predictions.filter(prediction => {
-			const battle = battles.find(battle => battle._id === prediction._id.battle);
-			return battle.hasOwnProperty('winner');
-		});
-	}
-	if (!predictions || predictions.length == 0) {
-		user.send('No future battle predictions to display. Try running `!check all` to see previous predictions or `!predict` to see if new battles are available.');
-		return;
-	}
-	for (let prediction of predictions) {
-		const battle = battles.find(battle => battle._id === prediction._id.battle);
-		await user.send(createBattleEmbed(battle, prediction.choice));
-	}
+	user.send('You have finished predicting the outcome of all currently available battles.\n\nYou may check on your choices or make changes to them using the `!predict` command.');
 };
 
 const handleCommand = message => {
@@ -153,8 +171,6 @@ const handleCommand = message => {
 		handleHelp(message.author);
 	} else if (cmd === 'predict') {
 		makePredictions(message.author);
-	} else if (cmd === 'check') {
-		checkPredictions(message.author, (args && args.includes('all')));
 	} else if (cmd === 'leaderboard') {
 		handleLeaderboard(message.author);
 	}
@@ -190,7 +206,9 @@ const handleTeams = async user => {
 const handleLeaderboard = async user => {
 	const predictions = await db.collection('predictions').find().toArray();
 	const battles = await db.collection('battles').find({winner: {$exists: true}}).toArray();
-	const leaderboard = client.guilds.get(guildId).roles.find(role => role.name === 'Registered').members.keyArray().map(user => { return {user: user, score: 0} });
+	const leaderboard = client.guilds.get(guildId).roles.find(role => role.name === 'Registered').members.keyArray().map(user => {
+		return {user: user, score: 0};
+	});
 
 	predictions.forEach(prediction => {
 		const battle = battles.find(battle => battle._id === prediction._id.battle);
@@ -221,6 +239,13 @@ const handleLeaderboard = async user => {
 	user.send({embed: embed});
 };
 
+const clean = text => {
+	if (typeof(text) === 'string') {
+		return text.replace(/`/g, '`' + String.fromCharCode(8203)).replace(/@/g, '@' + String.fromCharCode(8203)).slice(0, 1990);
+	}
+	return text;
+};
+
 const handleAdminCommand = message => {
 	const slice = message.content.indexOf(' ');
 	const cmd = message.content.slice(prefix.length, (slice < 0) ? message.content.length : slice);
@@ -230,8 +255,6 @@ const handleAdminCommand = message => {
 		handleHelp(message.author);
 	} else if (cmd === 'predict') {
 		makePredictions(message.author);
-	} else if (cmd === 'check') {
-		checkPredictions(message.author, (args && args.includes('all')));
 	} else if (cmd === 'teams') {
 		handleTeams(message.author);
 	} else if (cmd === 'leaderboard') {
@@ -264,7 +287,7 @@ client.on('message', async message => {
 		const member = client.guilds.get(guildId).member(message.author);
 		if (member && member.roles.find(role => role.name === 'Administrator')) {
 			handleAdminCommand(message);
-		} else if (member && member.roles.find(role =>role.name === 'Registered')) {
+		} else if (member && member.roles.find(role => role.name === 'Registered')) {
 			handleCommand(message);
 		} else {
 			message.author.send('You must be a Registered BattleBots Prediction League member to execute commands.');
@@ -278,3 +301,12 @@ MongoClient.connect(mongodbUri, mongodbOptions).then(mongoClient => {
 
 	client.login(token).catch(console.error);
 }).catch(console.error);
+
+const fixChoices = async () => {
+	const predictions = await db.collection('predictions').find({}).toArray();
+	for (let prediction of predictions) {
+		if (typeof prediction.choice === 'number') {
+
+		}
+	}
+};
