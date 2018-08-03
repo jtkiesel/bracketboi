@@ -26,7 +26,7 @@
 		"start": "node app.js"
 	},
 	"dependencies": {
-		"discord.js": "hydrabolt/discord.js",
+		"discord.js": "hydrabolt/discord.js#bcdb801",
 		"mongodb": "^3.1.1",
 		"util": "^0.11.0"
 	},
