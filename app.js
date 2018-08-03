@@ -306,7 +306,7 @@ const fixChoices = async () => {
 	const predictions = await db.collection('predictions').find({}).toArray();
 	for (let prediction of predictions) {
 		if (typeof prediction.choice === 'number') {
-
+			const battle = await db.collection('battles').find({_id: prediction._id.battle});
 		}
 	}
 };

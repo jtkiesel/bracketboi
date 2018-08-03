@@ -2,7 +2,13 @@
 	"name": "bracketboi",
 	"version": "1.0.0",
 	"description": "Collects data for the BattleBots Prediction League Discord server.",
-	"keywords": ["Discord", "bot", "Battlebots", "predict", "league"],
+	"keywords": [
+		"Discord",
+		"bot",
+		"Battlebots",
+		"predict",
+		"league"
+	],
 	"homepage": "https://github.com/jtkiesel/bracketboi#readme",
 	"bugs": {
 		"url": "https://github.com/jtkiesel/bracketboi/issues"
@@ -20,7 +26,6 @@
 		"start": "node app.js"
 	},
 	"dependencies": {
-		"discord.js": "hydrabolt/discord.js",
 		"mongodb": "^3.1.1"
 	},
 	"engines": {
