@@ -1,6 +1,6 @@
 const Discord = require('discord.js');
 const mongodb = require('mongodb');
-const util = require('util');
+const util = require('Util');
 
 const client = new Discord.Client();
 const MongoClient = mongodb.MongoClient;
