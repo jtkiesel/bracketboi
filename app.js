@@ -10,7 +10,8 @@ const mongodbOptions = {
 	keepAlive: 1,
 	connectTimeoutMS: 30000,
 	reconnectTries: 30,
-	reconnectInterval: 5000
+	reconnectInterval: 5000,
+	useNewUrlParser: true
 };
 const prefix = '!';
 const guildId = '443426769056301057';
@@ -80,7 +81,8 @@ const makePredictions = async user => {
 			const name = battle.name.slice(0, battle.name.indexOf('Bracket Definition'));
 			const bots = battle.bots.slice();
 			for (let j = 0; j < battle.bots.length / 2; j++) {
-				battles.push({_id: battle._id + j + 1, name: `${name}Battle ${j + 1}`, bots: [bots.shift(), bots.pop()], deadline: battle.deadline});
+				const battleNum = battle.bots.length === 2 ? '' : ` ${j + 1}`;
+				battles.push({_id: battle._id + j + 1, name: `${name}${battleNum}`, bots: [bots.shift(), bots.pop()], deadline: battle.deadline});
 			}
 			continue;
 		}
@@ -213,7 +215,7 @@ const handleLeaderboard = async user => {
 	predictions.forEach(prediction => {
 		const battle = battles.find(battle => battle._id === prediction._id.battle);
 		if (battle && battle.winner === prediction.choice) {
-			const score = battle.name.includes('Rumble') ? 2 : 1;
+			const score = battle.hasOwnProperty('points') ? battle.points : (battle.name.includes('Rumble') ? 2 : 1);
 			const team = leaderboard.find(team => team.user === prediction._id.user);
 			if (team) {
 				team.score += score;
