@@ -16,7 +16,7 @@ const mongodbOptions = {
 const prefix = '!';
 const guildId = '443426769056301057';
 
-const emojis = ['🇦', '🇧', '🇨', '🇩'];
+const emojis = ['🇦', '🇧', '🇨', '🇩', '🇪', '🇫'];
 const noneEmoji = '❌';
 const acceptEmoji = '✅';
 
