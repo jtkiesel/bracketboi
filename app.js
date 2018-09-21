@@ -148,7 +148,7 @@ const makePredictions = async user => {
 				}
 				let round;
 				if (numBots >= 16) {
-					round = `R${numBots}`;
+					round = `Round of ${numBots}`;
 				} else if (numBots === 8) {
 					round = 'Quarterfinals';
 				} else if (numBots === 4) {
