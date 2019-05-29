@@ -1,4 +1,4 @@
-const { Client, MessageEmbed } = require('discord.js');
+const { Client, RichEmbed } = require('discord.js');
 const { MongoClient } = require('mongodb');
 const util = require('util');
 
@@ -26,7 +26,7 @@ const createFightEmbed = (fight, choice = '') => {
 		description += `${emojis[i]} ${bot}${bot === choice ? ' ⬅️' : ''}\n`;
 	}
 	description += `${noneEmoji} Abstain (automatic 0)${choice === '' ? ' ⬅️' : ''}`;
-	const embed = new MessageEmbed()
+	const embed = new RichEmbed()
 		.setTitle(`Who will win ${fight.name}?`)
 		.setDescription(description);
 	return embed;
@@ -180,7 +180,7 @@ const handleTeams = async user => {
 		if (description.length + s.length <= 2048) {
 			description += s;
 		} else {
-			const embed = new MessageEmbed()
+			const embed = new RichEmbed()
 				.setTitle(`Teams ${++i}:`)
 				.setDescription(description);
 
@@ -188,7 +188,7 @@ const handleTeams = async user => {
 			description = s;
 		}
 	});
-	const embed = new MessageEmbed()
+	const embed = new RichEmbed()
 		.setTitle(`Teams ${i == 0 ? '' : i + 1}:`)
 		.setDescription(description);
 
@@ -224,7 +224,7 @@ const handleLeaderboard = async user => {
 		}
 		description += `**\`#${String(lastRank + 1).padEnd(3)}\​\`** <@${leaderboard[i].user}> \`${leaderboard[i].score} point${leaderboard[i].score === 1 ? '' : 's'}\`\n`;
 	}
-	const embed = new MessageEmbed()
+	const embed = new RichEmbed()
 		.setTitle('Leaderboard:')
 		.setDescription(description);
 
