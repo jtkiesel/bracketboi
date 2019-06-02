@@ -174,14 +174,14 @@ const handleTeams = async user => {
 		.sort({size: -1})
 		.toArray();
 	let description = '';
-	let i = 0;
+	let page = 0;
 	teams.forEach(team => {
 		let s = `<@${team._id}> [${team.fights}]\n`;
 		if (description.length + s.length <= 2048) {
 			description += s;
 		} else {
 			const embed = new RichEmbed()
-				.setTitle(`Teams ${++i}:`)
+				.setTitle(`Teams ${++page}:`)
 				.setDescription(description);
 
 			user.send({embed: embed});
@@ -189,7 +189,7 @@ const handleTeams = async user => {
 		}
 	});
 	const embed = new RichEmbed()
-		.setTitle(`Teams ${i == 0 ? '' : i + 1}:`)
+		.setTitle(`Teams ${page == 0 ? '' : page + 1}:`)
 		.setDescription(description);
 
 	user.send({embed});
@@ -216,16 +216,27 @@ const handleLeaderboard = async user => {
 	});
 	leaderboard.sort((a, b) => b.score - a.score);
 	let description = '';
+	let page = 0;
 	let lastScore = -1;
 	for (let i = 0; i < leaderboard.length; i++) {
 		if (leaderboard[i].score !== lastScore) {
 			lastRank = i;
 			lastScore = leaderboard[i].score;
 		}
-		description += `**\`#${String(lastRank + 1).padEnd(3)}\​\`** <@${leaderboard[i].user}> \`${leaderboard[i].score} point${leaderboard[i].score === 1 ? '' : 's'}\`\n`;
+		let s = `**\`#${String(lastRank + 1).padEnd(3)}\​\`** <@${leaderboard[i].user}> \`${leaderboard[i].score} point${leaderboard[i].score === 1 ? '' : 's'}\`\n`;
+		if (description.length + s.length <= 2048) {
+			description += s;
+		} else {
+			const embed = new RichEmbed()
+				.setTitle(`Leaderboard ${++page}:`)
+				.setDescription(description);
+
+			user.send({embed: embed});
+			description = s;
+		}
 	}
 	const embed = new RichEmbed()
-		.setTitle('Leaderboard:')
+		.setTitle(`Leaderboard ${page == 0 ? '' : page + 1}:`)
 		.setDescription(description);
 
 	user.send({embed});
