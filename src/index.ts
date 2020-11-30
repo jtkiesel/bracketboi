@@ -7,8 +7,8 @@ const token = process.env.BRACKETBOI_TOKEN;
 const dbUri = process.env.BRACKETBOI_DB;
 const mongoOptions = {
 	retryWrites: true,
-	reconnectTries: Number.MAX_VALUE,
-	useNewUrlParser: true
+	useNewUrlParser: true,
+	useUnifiedTopology: true
 };
 const prefix = '!';
 const guildId = '443426769056301057';
@@ -219,6 +219,7 @@ const handleLeaderboard = async user => {
 	let page = 0;
 	let lastScore = -1;
 	for (let i = 0; i < leaderboard.length; i++) {
+		let lastRank = 0;
 		if (leaderboard[i].score !== lastScore) {
 			lastRank = i;
 			lastScore = leaderboard[i].score;
