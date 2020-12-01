@@ -1,47 +1,50 @@
 {
-	"name": "bracketboi",
-	"version": "1.0.0",
-	"description": "Collects data for the BattleBots Prediction League Discord server.",
-	"keywords": [
-		"Discord",
-		"bot",
-		"Battlebots",
-		"predict",
-		"league"
-	],
-	"homepage": "https://github.com/jtkiesel/bracketboi#readme",
-	"bugs": {
-		"url": "https://github.com/jtkiesel/bracketboi/issues"
-	},
-	"license": "MIT",
-	"author": {
-		"name": "Jordan T Kiesel"
-	},
-	"main": "build/index.js",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/jtkiesel/bracketboi.git"
-	},
-	"scripts": {
-		"prod": "npm run build && node build",
-		"start": "nodemon --exec ts-node src/index.ts",
-		"build": "tsc"
-	},
-	"dependencies": {
-		"discord.js": "11.5.0",
-		"mongodb": "^3.6.3"
-	},
-	"devDependencies": {
-		"@types/mongodb": "^3.5.34",
-		"@types/node": "^14.14.10",
-		"@typescript-eslint/eslint-plugin": "^4.9.0",
-		"@typescript-eslint/parser": "^4.9.0",
-		"eslint": "^7.14.0",
-		"nodemon": "^2.0.6",
-		"ts-node": "^9.0.0",
-		"typescript": "^4.1.2"
-	},
-	"engines": {
-		"node": "^12.3.1"
-	}
+  "name": "bracketboi",
+  "version": "1.0.0",
+  "description": "Discord bot that collects BattleBots fight predictions from members of the BattleBots Prediction League server.",
+  "keywords": [
+    "Discord",
+    "bot",
+    "Battlebots",
+    "predict",
+    "league"
+  ],
+  "homepage": "https://github.com/jtkiesel/bracketboi#readme",
+  "bugs": {
+    "url": "https://github.com/jtkiesel/bracketboi/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Jordan Kiesel"
+  },
+  "main": "build/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jtkiesel/bracketboi.git"
+  },
+  "scripts": {
+    "prod": "npm run build && node build",
+    "start": "nodemon --exec ts-node src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "discord.js": "^12.5.1",
+    "mongodb": "^3.6.3"
+  },
+  "devDependencies": {
+    "@types/mongodb": "^3.5.34",
+    "@types/node": "^14.14.10",
+    "@typescript-eslint/eslint-plugin": "^4.9.0",
+    "@typescript-eslint/parser": "^4.9.0",
+    "eslint": "^7.14.0",
+    "nodemon": "^2.0.6",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.1.2"
+  },
+  "engines": {
+    "node": "^14.15.1",
+    "npm": "^6.14.8"
+  },
+  "private": true,
+  "browserslist": "maintained node versions"
 }
