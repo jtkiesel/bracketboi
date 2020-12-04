@@ -224,8 +224,8 @@ const handleLeaderboard = async (user: User) => {
   let description = '';
   let page = 0;
   let lastScore = -1;
+  let lastRank = 0;
   for (let i = 0; i < leaderboard.length; i++) {
-    let lastRank = 0;
     if (leaderboard[i].score !== lastScore) {
       lastRank = i;
       lastScore = leaderboard[i].score;
