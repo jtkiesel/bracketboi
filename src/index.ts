@@ -75,64 +75,69 @@ const makePredictions = async (user: User) => {
       bracketIndex = i;
       const name = fight.name.slice(0, fight.name.indexOf('Bracket Definition'));
       const bots = fight.bots.slice();
-      for (let j = 0; j < Math.floor(fight.bots.length / 2); j++) {
+      for (let j = 0; j < fight.bots.length / 2; j++) {
         const fightNum = fight.bots.length === 2 ? '' : ` ${j + 1}`;
-        fights.push({_id: fight._id + j + 1, name: `${name}${fightNum}`, bots: [bots.shift(), bots.pop()], deadline: fight.deadline});
+        fights.push({_id: fight._id + j + 1, name: `${name}${fightNum}`, bots: [bots.shift(), bots.splice(bots.length - ((bots.length % 2) ? 1 : 2), 1)[0]], deadline: fight.deadline});
       }
       continue;
     }
-    const choices = emojis.slice(0, fight.bots.length);
-    const predictionIndex = predictions.findIndex(prediction => prediction._id.fight === fight._id);
-    try {
-      const message = await user.send(createFightEmbed(fight, predictionIndex >= 0 ? predictions[predictionIndex].choice : null));
-      const collector = message.awaitReactions((reaction, u) => {
-        return u.id === user.id && (reaction.emoji.name === noneEmoji || choices.includes(reaction.emoji.name));
-      }, {time: 60000, max: 1});
-      for (const choice of choices) {
-        await message.react(choice);
-      }
-      await message.react(noneEmoji);
-      const collected = await collector;
-      for (let choice = 0; choice < choices.length; choice++) {
-        const collectedReaction = collected.get(choices[choice]);
+    if (fight.bots[1] === undefined) {
+      const prediction = createPrediction(user.id, fight._id, fight.bots[0]);
+      await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
+    } else {
+      const choices = emojis.slice(0, fight.bots.length);
+      const predictionIndex = predictions.findIndex(prediction => prediction._id.fight === fight._id);
+      try {
+        const message = await user.send(createFightEmbed(fight, predictionIndex >= 0 ? predictions[predictionIndex].choice : null));
+        const collector = message.awaitReactions((reaction, u) => {
+          return u.id === user.id && (reaction.emoji.name === noneEmoji || choices.includes(reaction.emoji.name));
+        }, {time: 60000, max: 1});
+        for (const choice of choices) {
+          await message.react(choice);
+        }
+        await message.react(noneEmoji);
+        const collected = await collector;
+        for (let choice = 0; choice < choices.length; choice++) {
+          const collectedReaction = collected.get(choices[choice]);
+          if (collectedReaction?.users.resolve(user.id)) {
+            const bot = fight.bots[choice];
+            const prediction = createPrediction(user.id, fight._id, bot);
+            if (predictionIndex < 0) {
+              predictions.push(prediction);
+            } else {
+              predictions[predictionIndex] = prediction;
+            }
+            await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
+            message.edit(createFightEmbed(fight, bot));
+          }
+        }
+        const collectedReaction = collected.get(noneEmoji);
         if (collectedReaction?.users.resolve(user.id)) {
-          const bot = fight.bots[choice];
-          const prediction = createPrediction(user.id, fight._id, bot);
+          const prediction = createPrediction(user.id, fight._id);
+          await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
           if (predictionIndex < 0) {
             predictions.push(prediction);
           } else {
             predictions[predictionIndex] = prediction;
           }
-          await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
-          message.edit(createFightEmbed(fight, bot));
+          message.edit(createFightEmbed(fight));
         }
-      }
-      const collectedReaction = collected.get(noneEmoji);
-      if (collectedReaction?.users.resolve(user.id)) {
-        const prediction = createPrediction(user.id, fight._id);
-        await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
-        if (predictionIndex < 0) {
-          predictions.push(prediction);
-        } else {
-          predictions[predictionIndex] = prediction;
+        if (collected.size === 0) {
+          message.edit(`Sorry, your request timed out. Your choices up until this point have been saved.\nPlease send \`${prefix}predict\` again to start over.`, {embed: null});
+          return;
         }
-        message.edit(createFightEmbed(fight));
+      } catch (err) {
+        console.error(err);
       }
-      if (collected.size === 0) {
-        message.edit(`Sorry, your request timed out. Your choices up until this point have been saved.\nPlease send \`${prefix}predict\` again to start over.`, {embed: null});
-        return;
-      }
-    } catch (err) {
-      console.error(err);
     }
     if (i === fights.length - 1 && bracketIndex >= 0) {
       const bracket = fights[bracketIndex];
-      const numBots = bracket.bots.length / 2;
-      if (numBots > 1) {
+      if ((bracket.bots.length / 2) > 1) {
         const bots = [];
-        for (let j = 0; j < numBots; j++) {
-          bots.unshift(predictions.find(prediction => prediction._id.fight === bracket._id + j + 1).choice);
+        for (let j = 0; j < (bracket.bots.length / 2); j++) {
+          bots.push(predictions.find(prediction => prediction._id.fight === bracket._id + j + 1).choice);
         }
+        const numBots = Math.floor(bracket.bots.length / 2);
         let round: string;
         if (numBots >= 16) {
           round = `Round of ${numBots}`;
@@ -142,9 +147,11 @@ const makePredictions = async (user: User) => {
           round = 'Semifinals';
         } else if (numBots === 2) {
           round = 'Final';
+        } else {
+          round = 'Bounty';
         }
         const name = bracket.name.replace(/[^ ]+ Bracket Definition/, `${round} Bracket Definition`);
-        fights.push({_id: bracket._id + numBots + 1, name: name, bots: bots, deadline: bracket.deadline});
+        fights.push({_id: bracket._id + Math.ceil(bracket.bots.length / 2) + 1, name: name, bots: bots, deadline: bracket.deadline});
       }
     }
   }
