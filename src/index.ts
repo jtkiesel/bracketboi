@@ -68,20 +68,53 @@ const makePredictions = async (user: User) => {
     return;
   }
   const predictions = await getPredictions(user) || [];
-  let bracketIndex = -1;
+  await predictFights(fights, predictions, user);
+  user.send(`You have finished predicting the outcome of all currently available fights.\n\nYou may check on your choices or make changes to them using the \`${prefix}predict\` command.`);
+};
+
+const predictFights = async (fights, predictions, user: User) => {
   for (let i = 0; i < fights.length; i++) {
     const fight = fights[i];
     if (fight.name.includes('Bracket Definition')) {
-      bracketIndex = i;
       const name = fight.name.slice(0, fight.name.indexOf('Bracket Definition'));
       const bots = fight.bots.slice();
+      const bracketFights = [];
       for (let j = 0; j < fight.bots.length / 2; j++) {
         const fightNum = fight.bots.length === 2 ? '' : ` ${j + 1}`;
-        fights.push({_id: fight._id + j + 1, name: `${name}${fightNum}`, bots: [bots.shift(), bots.splice(bots.length - ((bots.length % 2) ? 1 : 2), 1)[0]], deadline: fight.deadline});
+        bracketFights.push({_id: fight._id + j + 1, name: `${name}${fightNum}`, bots: [bots.shift(), bots.splice(bots.length - ((bots.length % 2) ? 1 : 2), 1)[0]], deadline: fight.deadline});
       }
-      continue;
-    }
-    if (fight.bots[1] === undefined) {
+      await predictFights(bracketFights, predictions, user);
+      if (fight.bots.length > 2) {
+        const bots = [];
+        for (let j = 0; j < (fight.bots.length / 2); j++) {
+          bots.push(predictions.find(prediction => prediction._id.fight === fight._id + j + 1).choice);
+        }
+        const numBots = Math.floor(fight.bots.length / 2);
+        let round: string;
+        if (numBots >= 16) {
+          round = `Round of ${numBots}`;
+        } else if (numBots === 8) {
+          round = 'Quarterfinals';
+        } else if (numBots === 4) {
+          round = 'Semifinals';
+        } else if (numBots === 2) {
+          round = 'Final';
+        } else {
+          round = 'Bounty';
+        }
+        const name = fight.name.replace(/[^ ]+ Bracket Definition/, `${round} Bracket Definition`);
+        const nextRound = [
+          {
+            _id: fight._id + Math.ceil(fight.bots.length / 2) + 1,
+            name,
+            bots,
+            deadline: fight.deadline
+          }
+        ];
+        console.log(nextRound);
+        await predictFights(nextRound, predictions, user);
+      }
+    } else if (fight.bots[1] === undefined) {
       const prediction = createPrediction(user.id, fight._id, fight.bots[0]);
       await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
     } else {
@@ -130,32 +163,7 @@ const makePredictions = async (user: User) => {
         console.error(err);
       }
     }
-    if (i === fights.length - 1 && bracketIndex >= 0) {
-      const bracket = fights[bracketIndex];
-      if ((bracket.bots.length / 2) > 1) {
-        const bots = [];
-        for (let j = 0; j < (bracket.bots.length / 2); j++) {
-          bots.push(predictions.find(prediction => prediction._id.fight === bracket._id + j + 1).choice);
-        }
-        const numBots = Math.floor(bracket.bots.length / 2);
-        let round: string;
-        if (numBots >= 16) {
-          round = `Round of ${numBots}`;
-        } else if (numBots === 8) {
-          round = 'Quarterfinals';
-        } else if (numBots === 4) {
-          round = 'Semifinals';
-        } else if (numBots === 2) {
-          round = 'Final';
-        } else {
-          round = 'Bounty';
-        }
-        const name = bracket.name.replace(/[^ ]+ Bracket Definition/, `${round} Bracket Definition`);
-        fights.push({_id: bracket._id + Math.ceil(bracket.bots.length / 2) + 1, name: name, bots: bots, deadline: bracket.deadline});
-      }
-    }
   }
-  user.send(`You have finished predicting the outcome of all currently available fights.\n\nYou may check on your choices or make changes to them using the \`${prefix}predict\` command.`);
 };
 
 const handleCommand = async (message: Message) => {
