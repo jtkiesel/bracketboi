@@ -75,7 +75,7 @@ const makePredictions = async (user: User) => {
       bracketIndex = i;
       const name = fight.name.slice(0, fight.name.indexOf('Bracket Definition'));
       const bots = fight.bots.slice();
-      for (let j = 0; j < fight.bots.length / 2; j++) {
+      for (let j = 0; j < Math.floor(fight.bots.length / 2); j++) {
         const fightNum = fight.bots.length === 2 ? '' : ` ${j + 1}`;
         fights.push({_id: fight._id + j + 1, name: `${name}${fightNum}`, bots: [bots.shift(), bots.pop()], deadline: fight.deadline});
       }
