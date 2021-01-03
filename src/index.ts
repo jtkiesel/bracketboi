@@ -115,7 +115,13 @@ const predictFights = async (fights, predictions, user: User) => {
         await predictFights(nextRound, predictions, user);
       }
     } else if (fight.bots[1] === undefined) {
+      const predictionIndex = predictions.findIndex(prediction => prediction._id.fight === fight._id);
       const prediction = createPrediction(user.id, fight._id, fight.bots[0]);
+      if (predictionIndex < 0) {
+        predictions.push(prediction);
+      } else {
+        predictions[predictionIndex] = prediction;
+      }
       await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
     } else {
       const choices = emojis.slice(0, fight.bots.length);
