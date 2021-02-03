@@ -111,7 +111,6 @@ const predictFights = async (fights, predictions, user: User) => {
             deadline: fight.deadline
           }
         ];
-        console.log(nextRound);
         await predictFights(nextRound, predictions, user);
       }
     } else if (fight.bots[1] === undefined) {
