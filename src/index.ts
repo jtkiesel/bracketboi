@@ -5,6 +5,7 @@ import { inspect } from 'util';
 const client = new Client();
 const token = process.env.BRACKETBOI_TOKEN;
 const dbUri = process.env.BRACKETBOI_DB;
+const ownerId = process.env.DISCORD_ID;
 const mongoOptions = {
   retryWrites: true,
   useNewUrlParser: true,
@@ -34,7 +35,7 @@ const createFightEmbed = (fight, choice = '') => {
   return embed;
 };
 
-const createPrediction = (user: string, fight: string, choice = '') => {
+const createPrediction = (user: string, fight: number, choice = '') => {
   return {
     _id: {
       user,
@@ -49,30 +50,79 @@ const getPredictions = (user: User) => {
 };
 
 const handleHelp = (user: User) => {
-  user.send(`\`${prefix}help\`: Information about all commands.\n\`${prefix}predict\`: Predict the outcome of future fights, and check your predictions for those fights.\n\`${prefix}leaderboard\`: Predictors with the highest number of points.`);
+  user.send(`\`${prefix}help\`: Information about all commands.
+\`${prefix}predict\`: Predict the outcome of future fights, and check your \
+predictions for those fights.
+\`${prefix}leaderboard\`: Predictors with the highest number of points.`);
+};
+
+const handlePrediction = async (prediction): Promise<void> => {
+  await db.collection('predictions').updateOne({_id: prediction._id}, {$set: prediction}, {upsert: true});
+};
+
+const handleResult = async (prediction): Promise<void> => {
+  await db.collection('fights').updateOne({
+    _id: prediction._id.fight
+  }, {
+    $set: {
+      winner: prediction.choice
+    }
+  }, {
+    upsert: true
+  });
 };
 
 const makePredictions = async (user: User) => {
-  const message1 = await user.send(`You are about to make your predictions for the winners of future fights!\n\nEach fight will be presented to you, one at a time, and you must select the reaction corresponding to the bot you wish to choose for each fight. You also have the option of abstaining from predicting (if, for example, you already know the outcome of a particular fight), but **this will cause your score for that fight to be 0**.\n\nYou will have one minute to make your selection for each fight, and as soon as you make each of your selections, your choices are saved. **But don't worry!** You can change your predictions at any time (up until each fight's expiration time, some predetermined amount of time before the fight airs on TV) by executing the \`${prefix}predict\` command again.\n\nAn arrow emoji will point to your selection if/when you have made a prediction.\n\nSelect the reaction below when you are ready to begin.`);
-  message1.react(acceptEmoji);
-  const collected1 = await message1.awaitReactions((reaction, u) => {
+  const message = await user.send(`You are about to make your predictions for \
+the winners of future fights!
+
+Each fight will be presented to you, one at a \
+time, and you must select the reaction corresponding to the bot you wish to \
+choose for each fight. You also have the option of abstaining from predicting \
+(if, for example, you already know the outcome of a particular fight), but \
+**this will cause your score for that fight to be 0**.
+
+You will have one minute to make your selection for each fight, and as soon as \
+you make each of your selections, your choices are saved. **But don't worry!** \
+You can change your predictions at any time (up until each fight's expiration \
+time, some predetermined amount of time before the fight airs on TV) by \
+executing the \`${prefix}predict\` command again.
+
+An arrow emoji will point to your selection if/when you have made a prediction.
+
+Select the reaction below when you are ready to begin.`);
+  message.react(acceptEmoji);
+  const collected = await message.awaitReactions((reaction, u) => {
     return u.id === user.id && reaction.emoji.name === acceptEmoji;
   }, {time: 100000, max: 1});
-  if (collected1.size === 0) {
-    message1.edit(`Sorry, your request timed out. Please send \`${prefix}predict\` again to start over.`);
+  if (collected.size === 0) {
+    await message.edit(`Sorry, your request timed out. Please send \
+\`${prefix}predict\` again to start over.`);
     return;
   }
-  const fights = (await db.collection('fights').find().toArray()).filter(fight => Date.parse(fight.deadline) > Date.now());
+  const fights = (await db.collection('fights').find().toArray())
+    .filter(fight => Date.parse(fight.deadline) > Date.now());
   if (fights.length === 0) {
-    user.send('There are no fights available at the moment.');
+    await user.send('There are no fights available at the moment.');
     return;
   }
   const predictions = await getPredictions(user) || [];
-  await predictFights(fights, predictions, user);
-  user.send(`You have finished predicting the outcome of all currently available fights.\n\nYou may check on your choices or make changes to them using the \`${prefix}predict\` command.`);
+  await predictFights(fights, predictions, user, handlePrediction);
+  await user.send(`You have finished predicting the outcome of all currently available fights.
+
+You may check on your choices or make changes to them using the \`${prefix}predict\` command.`);
 };
 
-const predictFights = async (fights, predictions, user: User) => {
+const setResults = async (user: User) => {
+  const fights = await db.collection('fights').find({winner: null}).toArray();
+  if (fights.length === 0) {
+    await user.send('There are no fights available at the moment.');
+    return;
+  }
+  await predictFights(fights, [], user, handleResult);
+};
+
+const predictFights = async (fights, predictions, user: User, handlePrediction: (prediction) => Promise<void>) => {
   for (let i = 0; i < fights.length; i++) {
     const fight = fights[i];
     if (fight.name.includes('Bracket Definition')) {
@@ -83,7 +133,7 @@ const predictFights = async (fights, predictions, user: User) => {
         const fightNum = fight.bots.length === 2 ? '' : ` ${j + 1}`;
         bracketFights.push({_id: fight._id + j + 1, name: `${name}${fightNum}`, bots: [bots.shift(), bots.splice(bots.length - ((bots.length % 2) ? 1 : 2), 1)[0]], deadline: fight.deadline});
       }
-      await predictFights(bracketFights, predictions, user);
+      await predictFights(bracketFights, predictions, user, handlePrediction);
       if (fight.bots.length > 2) {
         const bots = [];
         for (let j = 0; j < (fight.bots.length / 2); j++) {
@@ -111,7 +161,7 @@ const predictFights = async (fights, predictions, user: User) => {
             deadline: fight.deadline
           }
         ];
-        await predictFights(nextRound, predictions, user);
+        await predictFights(nextRound, predictions, user, handlePrediction);
       }
     } else if (fight.bots[1] === undefined) {
       const predictionIndex = predictions.findIndex(prediction => prediction._id.fight === fight._id);
@@ -121,7 +171,6 @@ const predictFights = async (fights, predictions, user: User) => {
       } else {
         predictions[predictionIndex] = prediction;
       }
-      await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
     } else {
       const choices = emojis.slice(0, fight.bots.length);
       const predictionIndex = predictions.findIndex(prediction => prediction._id.fight === fight._id);
@@ -135,35 +184,22 @@ const predictFights = async (fights, predictions, user: User) => {
         }
         await message.react(noneEmoji);
         const collected = await collector;
-        for (let choice = 0; choice < choices.length; choice++) {
-          const collectedReaction = collected.get(choices[choice]);
-          if (collectedReaction?.users.resolve(user.id)) {
-            const bot = fight.bots[choice];
-            const prediction = createPrediction(user.id, fight._id, bot);
-            if (predictionIndex < 0) {
-              predictions.push(prediction);
-            } else {
-              predictions[predictionIndex] = prediction;
-            }
-            await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
-            message.edit(createFightEmbed(fight, bot));
-          }
-        }
-        const collectedReaction = collected.get(noneEmoji);
-        if (collectedReaction?.users.resolve(user.id)) {
-          const prediction = createPrediction(user.id, fight._id);
-          await db.collection('predictions').findOneAndUpdate({_id: prediction._id}, {$set: prediction}, {upsert: true});
-          if (predictionIndex < 0) {
-            predictions.push(prediction);
-          } else {
-            predictions[predictionIndex] = prediction;
-          }
-          message.edit(createFightEmbed(fight));
-        }
         if (collected.size === 0) {
-          message.edit(`Sorry, your request timed out. Your choices up until this point have been saved.\nPlease send \`${prefix}predict\` again to start over.`, {embed: null});
+          message.edit(`Sorry, your request timed out. Your choices up until \
+this point have been saved.
+Please send \`${prefix}predict\` again to start over.`, {embed: null});
           return;
         }
+        const choice = choices.indexOf(collected.first().emoji.name);
+        const bot = choice < 0 ? null : fight.bots[choice];
+        const prediction = createPrediction(user.id, fight._id, bot);
+        if (predictionIndex < 0) {
+          predictions.push(prediction);
+        } else {
+          predictions[predictionIndex] = prediction;
+        }
+        await handlePrediction(prediction);
+        message.edit(createFightEmbed(fight, bot));
       } catch (err) {
         console.error(err);
       }
@@ -185,11 +221,12 @@ const handleCommand = async (message: Message) => {
       if (member?.roles.cache.get(registeredRoleId)) {
         makePredictions(message.author);
       } else {
-        message.author.send(`You must be a Registered BattleBots Prediction League member to execute the \`${prefix}predict\` command.`);
+        await message.author.send(`You must be a Registered BattleBots \
+Prediction League member to execute the \`${prefix}predict\` command.`);
       }
       break;
     case 'leaderboard':
-      handleLeaderboard(message.author);
+      await handleLeaderboard(message.author);
       break;
   }
 };
@@ -201,7 +238,7 @@ const handleTeams = async (user: User) => {
     .toArray();
   let description = '';
   let page = 0;
-  teams.forEach(team => {
+  for (const team of teams) {
     const s = `<@${team._id}> [${team.fights}]\n`;
     if (description.length + s.length <= 2048) {
       description += s;
@@ -210,15 +247,15 @@ const handleTeams = async (user: User) => {
         .setTitle(`Teams ${++page}:`)
         .setDescription(description);
 
-      user.send(embed);
+      await user.send(embed);
       description = s;
     }
-  });
+  }
   const embed = new MessageEmbed()
     .setTitle(`Teams ${page == 0 ? '' : page + 1}:`)
     .setDescription(description);
 
-  user.send(embed);
+  await user.send(embed);
 };
 
 const handleLeaderboard = async (user: User) => {
@@ -231,7 +268,7 @@ const handleLeaderboard = async (user: User) => {
   predictions.forEach(prediction => {
     const fight = fights.find(fight => fight._id === prediction._id.fight);
     if (fight?.winner === prediction.choice) {
-      const score = fight.hasOwnProperty('points') ? fight.points : (fight.name.includes('Rumble') ? 2 : 1);
+      const score = fight.hasOwnProperty('points') ? fight.points : (fight.name?.includes('Rumble') ? 2 : 1);
       const team = leaderboard.find(team => team.user === prediction._id.user);
       if (team) {
         team.score += score;
@@ -250,7 +287,10 @@ const handleLeaderboard = async (user: User) => {
       lastRank = i;
       lastScore = leaderboard[i].score;
     }
-    const s = `**\`#${String(lastRank + 1).padEnd(3)}\​\`** <@${leaderboard[i].user}> \`${leaderboard[i].score} point${leaderboard[i].score === 1 ? '' : 's'}\`\n`;
+    const s = `**\`#${String(lastRank + 1).padEnd(3)}\​\`** \
+<@${leaderboard[i].user}> \`${leaderboard[i].score} \
+point${leaderboard[i].score === 1 ? '' : 's'}\`
+`;
     if (description.length + s.length <= 2048) {
       description += s;
     } else {
@@ -258,24 +298,21 @@ const handleLeaderboard = async (user: User) => {
         .setTitle(`Leaderboard ${++page}:`)
         .setDescription(description);
 
-      user.send(embed);
+      await user.send(embed);
       description = s;
     }
   }
   const embed = new MessageEmbed()
-    .setTitle(`Leaderboard ${page == 0 ? '' : page + 1}:`)
+    .setTitle(`Leaderboard${page == 0 ? '' : ` ${page + 1}`}:`)
     .setDescription(description);
 
-  user.send(embed);
+  await user.send(embed);
 };
 
 const clean = (text: string): string => {
-  return text.replace(/`/g, `\`${String.fromCharCode(8203)}`).replace(/@/g, `@${String.fromCharCode(8203)}`).slice(0, 1990);
-};
-
-const restart = (): Promise<string> => {
-  client.destroy();
-  return client.login(token);
+  return text.replace(/`/g, `\`${String.fromCharCode(8203)}`)
+    .replace(/@/g, `@${String.fromCharCode(8203)}`)
+    .slice(0, 1990);
 };
 
 const handleAdminCommand = async (message: Message) => {
@@ -288,13 +325,18 @@ const handleAdminCommand = async (message: Message) => {
       handleHelp(message.author);
       break;
     case 'predict':
-      makePredictions(message.author);
+      await makePredictions(message.author);
       break;
     case 'teams':
-      handleTeams(message.author);
+      await handleTeams(message.author);
       break;
     case 'leaderboard':
-      handleLeaderboard(message.author);
+      await handleLeaderboard(message.author);
+      break;
+    case 'results':
+      if (message.author.id === ownerId) {
+        await setResults(message.author);
+      }
       break;
     case 'eval':
       if (message.author.id === '197781934116569088') {
@@ -303,12 +345,12 @@ const handleAdminCommand = async (message: Message) => {
           if (typeof evaled !== 'string') {
             evaled = inspect(evaled);
           }
-          message.channel.send(clean(evaled), {code: 'xl'}).catch(console.error);
+          await message.channel.send(clean(evaled), {code: 'xl'});
         } catch (error) {
-          message.channel.send(`\`ERROR\` \`\`\`xl\n${clean(error)}\`\`\``).catch(console.error);
+          await message.channel.send(`\`ERROR\` \`\`\`xl\n${clean(error)}\`\`\``);
         }
       } else {
-        message.reply('you don\'t have permission to run that command.');
+        await message.reply('you don\'t have permission to run that command.');
       }
       break;
   }
@@ -327,19 +369,18 @@ client.on(Constants.Events.CLIENT_READY, () => {
 
 client.on(Constants.Events.MESSAGE_CREATE, async message => {
   if (message.content.startsWith(prefix)) {
-    const guild = await client.guilds.fetch(guildId);
-    const member = await guild.members.fetch(message);
-    if (member?.roles.cache.get(adminRoleId)) {
-      handleAdminCommand(message);
-    } else {
-      handleCommand(message);
+    try {
+      const guild = await client.guilds.fetch(guildId);
+      const member = await guild.members.fetch(message);
+      if (member?.roles.cache.get(adminRoleId)) {
+        await handleAdminCommand(message);
+      } else {
+        await handleCommand(message);
+      }
+    } catch (error) {
+      console.error(error);
     }
   }
-});
-
-client.on(Constants.Events.DISCONNECT, event => {
-  console.error(`Disconnect: ${JSON.stringify(event)}`);
-  restart().catch(console.error);
 });
 
 client.on(Constants.Events.ERROR, console.error);
