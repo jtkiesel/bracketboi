@@ -1,10 +1,14 @@
-# npm
-node_modules/
+# dependencies
+/node_modules
 
-# macOS
-.DS_Store
+# testing
+/coverage
 
-# VS Code
-.vscode/
+# production
+/dist
 
-build/
+# environment variables
+/.env
+
+# IDE
+/.vscode

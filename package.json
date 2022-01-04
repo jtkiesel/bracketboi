@@ -10,41 +10,37 @@
     "league"
   ],
   "homepage": "https://github.com/jtkiesel/bracketboi#readme",
-  "bugs": {
-    "url": "https://github.com/jtkiesel/bracketboi/issues"
-  },
+  "bugs": "https://github.com/jtkiesel/bracketboi/issues",
   "license": "MIT",
   "author": {
-    "name": "Jordan Kiesel"
+    "name": "Jordan Kiesel",
+    "url": "https://github.com/jtkiesel"
   },
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/jtkiesel/bracketboi.git"
   },
   "scripts": {
-    "prod": "npm run build && node build",
-    "start": "nodemon --exec ts-node src/index.ts",
-    "build": "tsc"
+    "prebuild": "yarn clean",
+    "build": "tsc",
+    "clean": "rm -fr dist",
+    "predev": "yarn clean",
+    "dev": "tsc-watch --onSuccess \"yarn start\"",
+    "start": "node dist"
   },
   "dependencies": {
-    "discord.js": "^12.5.1",
-    "mongodb": "^3.6.3"
+    "discord.js": "^13.5.0",
+    "dotenv": "^10.0.0",
+    "mongodb": "^4.2.2"
   },
   "devDependencies": {
-    "@types/mongodb": "^3.5.34",
-    "@types/node": "^14.14.10",
-    "@typescript-eslint/eslint-plugin": "^4.9.0",
-    "@typescript-eslint/parser": "^4.9.0",
-    "eslint": "^7.14.0",
-    "nodemon": "^2.0.6",
-    "ts-node": "^9.0.0",
-    "typescript": "^4.1.2"
+    "@types/node": "^17.0.8",
+    "gts": "^3.1.0",
+    "tsc-watch": "^4.6.0",
+    "typescript": "^4.5.4"
   },
   "engines": {
-    "node": "14.15.1",
-    "npm": "^6.14.8"
-  },
-  "private": true,
-  "browserslist": "maintained node versions"
+    "node": ">=16.6.0"
+  }
 }
