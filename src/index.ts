@@ -152,7 +152,7 @@ You may check on your choices or make changes to them using the \`${prefix}predi
 const setResults = async (user: User) => {
   const fights = await db
     .collection<Fight>('fights')
-    .find({winner: {exists: false}})
+    .find({winner: {$exists: false}})
     .toArray();
   if (fights.length === 0) {
     await user.send('There are no fights available at the moment.');
