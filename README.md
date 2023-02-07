@@ -11,6 +11,18 @@ These instructions will get you a copy of the project up and running on your loc
 - [Node.js](https://nodejs.org/)
 - [Yarn](https://yarnpkg.com/)
 
+### Environment Variables
+
+|    Variable     | Required |                Default                 |                 Description                 |
+| :-------------: | :------: | :------------------------------------: | :-----------------------------------------: |
+|  `DISCORD_ID`   |    ✓     |                                        |   Id of the bot manager's Discord account   |
+| `DISCORD_TOKEN` |    ✓     |                                        | Token of the Discord account to log in with |
+|    `ROLE_ID`    |    ✓     |                                        |      Id of the predictors Discord role      |
+|   `SERVER_ID`   |    ✓     |                                        |     Id of the prediction Discord server     |
+|   `LOG_LEVEL`   |          |                 `INFO`                 |              Minimum log level              |
+|   `MONGO_URL`   |          | `mongodb://localhost:27017/bracketboi` |        MongoDB server connection URI        |
+|   `NODE_ENV`    |          |             `development`              |       Node.JS application environment       |
+
 ### Installing
 
 Install dependencies
