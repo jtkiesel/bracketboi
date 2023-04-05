@@ -1,12 +1,7 @@
-import {
-  ApplicationCommandRegistries,
-  RegisterBehavior,
-  SapphireClient,
-} from '@sapphire/framework';
+import {SapphireClient} from '@sapphire/framework';
 import '@sapphire/plugin-logger/register';
 import {GatewayIntentBits, Options, Partials} from 'discord.js';
 import {MongoClient} from 'mongodb';
-import 'source-map-support/register';
 import {mongoUrl, logLevel} from './lib/config';
 
 const mongoClient = new MongoClient(mongoUrl);
@@ -31,10 +26,6 @@ export interface Prediction {
   };
   readonly choice: string;
 }
-
-ApplicationCommandRegistries.setDefaultBehaviorWhenNotIdentical(
-  RegisterBehavior.Overwrite
-);
 
 const discordClient = new SapphireClient({
   shards: 'auto',
@@ -70,13 +61,10 @@ const main = async () => {
     discordClient.logger.info('Logged in to Discord');
   } catch (error) {
     discordClient.logger.fatal(error);
-    throw error;
+    discordClient.destroy();
+    await mongoClient.close();
+    process.exit(1);
   }
 };
-
-process.on('SIGTERM', async () => {
-  discordClient.destroy();
-  await mongoClient.close();
-});
 
 main();

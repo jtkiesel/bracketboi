@@ -34,20 +34,20 @@ class Config<T> {
   }
 
   private static parseLogLevel(value?: string) {
-    switch (value?.toUpperCase()) {
-      case 'TRACE':
+    switch (value?.toLowerCase()) {
+      case 'trace':
         return LogLevel.Trace;
-      case 'DEBUG':
+      case 'debug':
         return LogLevel.Debug;
-      case 'INFO':
+      case 'info':
         return LogLevel.Info;
-      case 'WARN':
+      case 'warn':
         return LogLevel.Warn;
-      case 'ERROR':
+      case 'error':
         return LogLevel.Error;
-      case 'FATAL':
+      case 'fatal':
         return LogLevel.Fatal;
-      case 'NONE':
+      case 'none':
         return LogLevel.None;
       case undefined:
         return undefined;
@@ -63,5 +63,8 @@ export const mongoUrl = Config.string('MONGO_URL').orElse(
   'mongodb://localhost:27017/bracketboi'
 );
 export const nodeEnv = Config.string('NODE_ENV').orElse('development');
+export const npmPackageVersion = Config.string(
+  'npm_package_version'
+).orElseThrow();
 export const roleId = Config.string('ROLE_ID').orElseThrow();
 export const serverId = Config.string('SERVER_ID').orElseThrow();

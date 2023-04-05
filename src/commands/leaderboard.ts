@@ -1,9 +1,11 @@
-import {bold, hyperlink, inlineCode} from '@discordjs/builders';
 import {ApplyOptions} from '@sapphire/decorators';
 import {PaginatedMessage} from '@sapphire/discord.js-utilities';
 import {Command} from '@sapphire/framework';
 import {
+  bold,
   EmbedBuilder,
+  hyperlink,
+  inlineCode,
   type ChatInputCommandInteraction,
   type Collection,
   type GuildMember,

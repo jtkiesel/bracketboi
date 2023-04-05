@@ -27,19 +27,19 @@ These instructions will get you a copy of the project up and running on your loc
 
 Install dependencies
 
-```sh-session
+```sh
 yarn install
 ```
 
 Start the bot
 
-```sh-session
+```sh
 yarn dev
 ```
 
 ## Running the tests
 
-```sh-session
+```sh
 yarn test
 ```
 
@@ -47,25 +47,25 @@ yarn test
 
 Install dependencies
 
-```sh-session
+```sh
 yarn install
 ```
 
 Compile source
 
-```sh-session
+```sh
 yarn build
 ```
 
 Start the bot
 
-```sh-session
+```sh
 yarn start
 ```
 
 ## Versioning
 
-We use [SemVer](https://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/jtkiesel/vexibot/tags).
+We use [SemVer](https://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/jtkiesel/bracketboi/tags).
 
 ## Authors
 

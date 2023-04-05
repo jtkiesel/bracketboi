@@ -9,9 +9,7 @@ import {
   white,
   yellow,
 } from 'colorette';
-import {nodeEnv} from '../../lib/config';
-
-const {version} = require('../../../package.json');
+import {nodeEnv, npmPackageVersion} from '../../lib/config';
 
 const dev = nodeEnv === 'development';
 
@@ -25,17 +23,17 @@ export class ClientReadyListener extends Listener<typeof Events.ClientReady> {
   }
 
   private printBanner() {
+    const {logger} = this.container;
     const llc = dev ? magentaBright : white;
     const blc = dev ? magenta : blue;
-    const lines = [`${blc(version)}`, `[${green('+')}] Gateway`];
+    logger.info(blc(npmPackageVersion));
+    logger.info(`[${green('+')}] Gateway`);
 
     if (dev) {
-      lines.push(
+      logger.info(
         `${blc('<')}${llc('/')}${blc('>')} ${llc('DEVELOPMENT MODE')}`
       );
     }
-
-    this.container.logger.info(lines.join('\n'));
   }
 
   private printStoreDebugInformation() {

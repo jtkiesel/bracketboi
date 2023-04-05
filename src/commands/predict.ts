@@ -1,7 +1,6 @@
-import {EmbedBuilder} from '@discordjs/builders';
 import {ApplyOptions} from '@sapphire/decorators';
 import {Command} from '@sapphire/framework';
-import type {ChatInputCommandInteraction} from 'discord.js';
+import {EmbedBuilder, type ChatInputCommandInteraction} from 'discord.js';
 import {fights, predictions, type Fight, type Prediction} from '..';
 import {Color} from '../lib/embeds';
 import {predictFights} from '../lib/fights';
